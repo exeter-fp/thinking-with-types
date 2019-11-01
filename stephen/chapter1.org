@@ -1,9 +1,11 @@
 
 * Cardinality of Either Bool (Bool, Maybe Bool) -> Bool
 
- = 2 ^ (2 + (2 * (1 + 2)))
- = 2 ^ 8
- = 256
+  = 2 ^ (2 + (2 * (1 + 2)))
+  
+  = 2 ^ 8
+
+  = 256
 
  
 * Prove a^b^c = a^(b * c)
@@ -28,7 +30,7 @@ proof ( ba, _ ) ( Left b )  = ba b
 proof ( _, ca ) ( Right c ) = ca c
 
 proof' :: (Either b c -> a) -> (b -> a, c -> a)
-proof' _ a = (fn . Left, fn . Right)
+proof' fn a = (fn . Left, fn . Right)
 #+END_SRC
 
 Not sure this is right. Ignoring a param feels dirty.
