@@ -14,3 +14,20 @@ Type -> Constraint
 * The Kind of MonadTrans
 
 (Type -> Type) -> Type -> Type -> Constraint
+
+
+
+* Type Family to compute Not
+
+#+BEGIN_SRC haskell
+
+{-# LANGUAGE DataKinds    #-}
+{-# LANGUAGE TypeFamilies #-}
+
+module Chapter2 where
+
+type family Not (x :: Bool) :: Bool where
+  Not 'True = 'False
+  Not 'False = 'True
+
+#+END_SRC
