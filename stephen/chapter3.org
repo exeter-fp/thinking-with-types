@@ -1,0 +1,36 @@
+#+BEGIN_SRC haskell
+
+import           Data.Functor.Contravariant (Contravariant (..))
+import           Data.Functor.Invariant     (Invariant (..))
+
+
+newtype T1 a = T1 (Int -> a)
+
+instance Functor T1 where
+  fmap ab (T1 ia) = T1 $ ab . ia
+
+
+newtype T2 a = T2 (a -> Int)
+
+instance Contravariant T2 where
+  contramap ab (T2 bi) = T2 $ bi . ab
+
+
+newtype T3 a = T3 (a -> a)
+
+instance Invariant T3 where
+  invmap ab ba (T3 aa) = T3 $ ab . aa . ba
+
+
+newtype T4 a = T4 ((Int -> a) -> Int)
+
+instance Contravariant T4 where
+  contramap ab (T4 ibi) = T4 $ \ia -> ibi $ ab . ia
+
+
+newtype T5 a = T5 ((a -> Int) -> Int)
+
+instance Functor T5 where
+  fmap ab (T5 aii) = T5 $ \bi -> aii $ bi . ab
+
+#+END_SRC

@@ -1,0 +1,16 @@
+
+* The Kind of Show
+
+Type -> Constraint
+
+* The Kind of Functor
+
+(Type -> Type) -> Constraint
+
+* The Kind of Monad
+
+(Type -> Type) -> Constraint
+
+* The Kind of MonadTrans
+
+(Type -> Type) -> Type -> Type -> Constraint

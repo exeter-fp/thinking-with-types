@@ -1,0 +1,45 @@
+
+* Cardinality of Either Bool (Bool, Maybe Bool) -> Bool
+
+ = 2 ^ (2 + (2 * (1 + 2)))
+ = 2 ^ 8
+ = 256
+
+ 
+* Prove a^b^c = a^(b * c)
+  
+#+BEGIN_SRC haskell
+  proof :: (b -> c -> a) -> (b, c) -> a
+  proof bca (b,c) = bca b c
+
+  proof' :: ((b, c) -> a) -> b -> c -> a
+  proof' bca b c = bca (b, c)
+#+END_SRC
+
+proof is uncurry.
+proof' is curry.
+
+
+* Prove a ^ b * a ^ c = a ^ (b + c)
+
+#+BEGIN_SRC haskell
+proof :: (b -> a, c -> a) -> Either b c -> a
+proof ( ba, _ ) ( Left b )  = ba b
+proof ( _, ca ) ( Right c ) = ca c
+
+proof' :: (Either b c -> a) -> (b -> a, c -> a)
+proof' _ a = (fn . Left, fn . Right)
+#+END_SRC
+
+Not sure this is right. Ignoring a param feels dirty.
+
+
+* Prove (a * b) ^ c = a ^ c * b ^ c
+
+#+BEGIN_SRC haskell
+proof :: (c -> (a, b)) -> (c -> a, c -> b)
+proof fn = (fst . fn, snd . fn)
+
+proof' :: (c -> a, c -> b) -> c -> (a, b)
+proof' (ca, cb) c = (ca c, cb c)
+#+END_SRC
