@@ -33,7 +33,6 @@ proof' :: (Either b c -> a) -> (b -> a, c -> a)
 proof' fn a = (fn . Left, fn . Right)
 #+END_SRC
 
-Not sure this is right. Ignoring a param feels dirty.
 
 
 * Prove (a * b) ^ c = a ^ c * b ^ c
