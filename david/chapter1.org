@@ -1,0 +1,285 @@
+#+TITLE: Thinking With Types, Chapter 1
+
+* Because doing it in Haskell is too mainstream
+
+First I will define some basic types for the kind of stuff Haskell
+programmers do, using Common Lisp. This allows normal CL type
+specifiers to be used to notate the types we're talking about, and so
+the function ~typep~ can be used to check type membership.
+
+I'm using CL symbols for certain things here. 
+
+#+BEGIN_SRC lisp
+;; This is distinct from the normal CL concept of true/false
+(deftype bool ()
+  '(member true false))
+
+;; (typep 'true 'bool)
+
+(deftype spin () '(member up down))
+
+;; The 'tags' the thing as either left or right.
+(deftype either (a b)
+  `(or (cons (eql left) ,a)
+       (cons (eql right) ,b)))
+
+;; Type constructors
+(defun left (x)
+  (cons 'left x))
+(defun right (x)
+  (cons 'right x))
+
+;; (typep (left 'up) '(either spin bool))
+;; (typep (right 'true) '(either spin bool))
+
+(deftype maybe (x)
+  `(or (cons (eql just) ,x) (eql nothing)))
+
+(defun just (n)
+  (cons 'just n))
+
+(defparameter nothing 'nothing)
+;; (defun nothing () 'nothing) ; could just be a constant
+
+;; (typep (just "hi") '(maybe integer)) -> NIL
+;; (typep (just 9) '(maybe integer))    -> T
+;; (typep nothing '(maybe integer))     -> T
+
+;; This one expands out as a series of pairs
+(deftype tuple (&rest x)
+  (labels ((f (x)
+             (if x
+                 `(cons ,(car x)
+                        ,(f (cdr x)))
+                 'null)))
+    (f x)))
+;; (typep '(1 2 3) '(tuple integer integer integer))
+
+#+END_SRC
+
+I'll also define a compose function. I have a better macro for doing
+this, but this is a simple definition.
+
+#+BEGIN_SRC lisp
+(defun compose (f g)
+  (lambda (*)
+    (funcall g
+             (funcall f *))))
+#+END_SRC
+
+Now, it turns out that there is no means to expand typespecs to give
+the 'base' typespec in the common lisp standard, but Clozure Common
+Lisp defines ~ccl::type-expand~ which does that. Don't know if other
+CLs have an equivalent, but they probably must. Typespec expansion is
+required by the standard to terminate, which is a shame for defining
+lists of some type (see http://clhs.lisp.se/Issues/iss291_w.htm). CL
+is *not* Haskell (yet...).
+
+SO, using ~ccl::type-expand~ I can convert typespecs to base typespecs
+and thus implement the following:-
+
+#+BEGIN_SRC lisp
+
+(defun cardinality (type &optional (eval t))
+  (labels ((cardinality (type)
+             (setf type (ccl::type-expand type))
+             (if (listp type)
+                 (destructuring-bind (name &rest params)
+                     type
+                   (ecase name
+                     (integer (if (second params)
+                                  (1+ (- (second params)
+                                         (first params)))
+                                  :infinity))
+                     (eql 1)
+                     (cons `(* ,(cardinality (first params))
+                               ,(cardinality (second params))))
+                     (member (length params))
+                     (or `(+ ,(cardinality (first params))
+                             ,(cardinality (second params))))
+                     (func (destructuring-bind (a b)
+                               params
+                             `(expt ,(cardinality b)
+                                    ,(cardinality a))))
+                     ;; This is a limited special case
+                     (and (cond ((and (eql 'not (first (second params)))
+                                      (eql 2 (length params))
+                                      (subtypep (second (second params)) (first params)))
+                                 `(- ,(cardinality (first params))
+                                     ,(cardinality (second (second params)))))
+                                ((eql 'not (first (first params)))
+                                 (cardinality (cons 'and (reverse params))))
+                                (t (error "Not handled"))))))
+                 (or (case type
+                       (nil 0)
+                       (null 1)
+                       (fixnum (+ most-positive-fixnum (abs most-negative-fixnum) 1))
+                       (integer :infinity))
+                     (if eval
+                         (error "Can't get cardinality of ~A - unkonwn type" type)
+                         type)))))
+    (awhen (cardinality type)
+      (if eval
+          (eval it)
+          it))))
+#+END_SRC
+
+A couple of things to note here:-
+1. The above function takes a *type specifier* or typespec as it is
+   known, so it is called as:-
+   * ~(cardinality nil)~ -> 0 (this is the Void type)
+   * ~(cardinality null)~ -> 1 (the type which has only the symbol
+     'nil' as member)
+   * ~(cardinality '(integer 1 10))~ -> 10 (integers between 1 and 10)
+   * ~(cardinality '(eql hello))~ -> 1
+   * ~(cardinality '(member one two three))~ -> 3 (obviously)
+   * ~(cardinality '(maybe (integer 1 3)))~ -> 4 (includes 'nothing)
+2. This function works by recursing through the typespec and
+   generating an expression to compute the cardinality. It could just
+   do the computation, but it's useful to be able to see the expression.
+3. Passing 'nil' as the eval parameter suppresses the final
+   computation so you can see the expression:-
+   * ~(cardinality '(func c (func b a)) nil)~ -> ~(EXPT (EXPT A B) C)~
+   * ~(cardinality '(func (cons b c) a) nil)~ -> ~(EXPT A (* B C))~
+4. By suppressing the evaluation we can pass in 'type variables' -
+   they just appear raw in the resultant expression. They will error
+   if you try to compute the cardinality, but if you just return the
+   expression you're good.
+
+Common Lisp's 'function' type is no good for us here, because it
+doesn't have argument/return parameters. The 'func' thing I have
+defined above isn't really a type (yet), so I can't create things
+which will typecheck against this. This is kind of 'impossible' to do
+in Common Lisp, so it will take a little bit of work and finding a
+replacement for 'normal' common lisp functions (see
+http://www.lispworks.com/documentation/lw70/LW/html/lw-247.htm).
+
+** Exercise 1.2-i
+#+begin_src lisp
+(cardinality '(func (either bool
+                     (cons bool
+                      (maybe bool)))
+               bool)
+             nil)
+;; (EXPT 2 (+ (* 1 2) (* 1 (* 2 (+ (* 1 2) 1)))))
+
+(cardinality '(func (either bool
+                     (cons bool
+                      (maybe bool)))
+               bool))
+
+;; 256
+
+#+end_src
+
+
+"The inquisitive reader might wonder whether subtraction..."
+
+Here is an example of a subtraction type:-
+#+BEGIN_SRC lisp
+(cardinality '(and (integer 1 10) (not (eql 4))))
+;; -> 9 (- 10 1) 
+#+END_SRC
+
+I have only defined cardinality for a very limited set of subtraction
+types here.
+
+** Tic-Tac-Toe
+Checking the isomorphism for the Tic-tac-toe board...
+
+#+BEGIN_SRC lisp
+;; tic-tac-toe
+(cardinality '(tuple
+               (maybe bool)
+               (maybe bool)
+               (maybe bool)
+               (maybe bool)
+               (maybe bool)
+               (maybe bool)
+               (maybe bool)
+               (maybe bool)
+               (maybe bool)))
+
+;; 19683
+
+;; This is the same, so would be a valid board representation I guess
+(cardinality '(func (member one two three)
+               (func (member one two three)
+                (maybe bool))))
+;; 19683
+#+END_SRC
+
+So, using this function I can generate types for the functions in the
+second exercise.
+
+** Exercise 1.4-i
+Prove that (expt (expt a b) c) = (expt a (* b c))
+
+#+BEGIN_SRC lisp
+;; required type for left hand side of equality
+(cardinality '(func c (func b a)) nil)
+;; (EXPT (EXPT A B) C)
+
+;; and for right hand side
+(cardinality '(func (cons b c) a) nil)
+;; (EXPT A (* B C))
+
+;; provide from and to functions from the LHS to the RHS and vice-versa
+;; to prove the above.
+;; Of course, it must type check, but as I can't properly typecheck 'func' yet we'll just have to check some examples and hope for the best
+;; Hmmm - that's not very satisfying
+
+;; test for some numeric examples
+(eval `(let ((a 34)
+             (b 87)
+             (c 55))
+         (eql ,(cardinality '(func c (func b a)) nil)
+              ,(cardinality '(func (cons b c) a) nil))))
+
+;; now I have to write a function from LHS to RHS and vice versa
+;; f :: c -> b -> a
+;; this will yield (b,c) -> a
+(defun left-to-right (f)
+  (lambda (pair)
+    (funcall (funcall f (cdr pair))
+             (car pair))))
+
+
+;; Here's an example function which can be used for f above
+;; It's a Haskell style +
+(defun add (x)
+  (lambda (y)
+    (+ x y)))
+
+(funcall (left-to-right #'add) (cons 4 5))
+;; 9
+
+(defun right-to-left (f)
+  (lambda (c)
+    (lambda (b)
+      (funcall f (cons b c)))))
+
+;; f -> c -> b -> (b,c)
+
+(funcall (funcall (right-to-left (lambda (x)
+                                   (+ (car x)
+                                      (cdr x))))
+                  10)
+         13)
+
+
+;; This doesn't seem to give a general identity. It only works on certain functions
+(funcall (funcall (funcall (compose #'left-to-right #'right-to-left) #'add)
+                  4)
+         5)
+#+END_SRC
+
+Now, the repeated ~funcalls~ and stuff in the above make it look a bit
+cluttered compared to the Haskell version. Also I don't know what
+these correspond to in the ~Prelude~ because I don't think I have one
+of those here, but I'm reliably informed that they are ~uncurry~ and
+~curry~. 
+
+The composition of the left-to-right and right-to-left function don't
+give a *general* identity function. Only identity which accepts
+certain very specific types. I guess that makes sense. 
