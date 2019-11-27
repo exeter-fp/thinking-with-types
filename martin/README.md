@@ -22,3 +22,13 @@
 # Chapter 4 - Working with Types
 
 - [Notes](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter04/README.md)
+
+# Chapter 5 - Constraints and GADTs
+
+- [Notes](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter05/README.md)
+- [Examples (Part 1) - Source Code](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter05/Examples1.hs)
+- [Examples (Part 2) - Source Code](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter05/Examples2.hs)
+- [Exercises (Part 1) - Source Code](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter05/Exercises1.hs)
+- [Exercises (Part 1) - Test Specs](https://github.com/martinrist/haskell-sandbox/blob/master/test/ThinkingWithTypes/Chapter05/Exercises1Spec.hs)
+- [Exercises (Part 2) - Source Code](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter05/Exercises2.hs)
+- [Exercises (Part 2) - Test Specs](https://github.com/martinrist/haskell-sandbox/blob/master/test/ThinkingWithTypes/Chapter05/Exercises2Spec.hs)
