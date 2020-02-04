@@ -32,3 +32,9 @@
 - [Exercises (Part 1) - Test Specs](https://github.com/martinrist/haskell-sandbox/blob/master/test/ThinkingWithTypes/Chapter05/Exercises1Spec.hs)
 - [Exercises (Part 2) - Source Code](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter05/Exercises2.hs)
 - [Exercises (Part 2) - Test Specs](https://github.com/martinrist/haskell-sandbox/blob/master/test/ThinkingWithTypes/Chapter05/Exercises2Spec.hs)
+
+# Chapter 6 - Rank-N Types
+
+- [Notes](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter06/README.md)
+- [Exercises - Text](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter06/Exercises.md)
+- [Exercises - Source Code](https://github.com/martinrist/haskell-sandbox/blob/master/src/ThinkingWithTypes/Chapter06/Exercises.hs)
