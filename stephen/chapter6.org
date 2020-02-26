@@ -1,0 +1,50 @@
+* 6.3-i
+
+#+BEGIN_SRC haskell
+Int -> forall a. a -> a
+Int -> forall a. (a -> a)
+#+END_SRC
+
+Rank 1
+
+* 6.3-ii
+
+#+BEGIN_SRC haskell
+(a -> b) -> (forall c. c -> a) -> b
+(a -> b) -> ((forall c. c -> a) -> b)
+#+END_SRC
+
+Rank 2
+
+* 6.3-iii
+
+#+BEGIN_SRC haskell
+((forall x. m x -> b (z m x)) -> b (z m a)) -> m a
+#+END_SRC
+
+Rank 3
+
+
+#+BEGIN_SRC haskell
+
+{-# LANGUAGE RankNTypes #-}
+
+newtype Cont a = Cont { unCont :: forall r . (a -> r) -> r }
+
+instance Functor Cont where
+  fmap f (Cont ca) =
+      Cont $ ca $ \a br -> br $ f  a
+
+instance Applicative Cont where
+  pure a = Cont $ \ar -> ar a
+  (Cont ab) <*> (Cont a) =
+    Cont $ ab $ \ab' br' -> a ( br' . ab' )
+
+
+instance Monad Cont where
+  return = pure
+  (Cont a) >>= amb =
+    Cont $ \br -> a $ \a' -> unCont ( amb a' ) br
+
+#+END_SRC
+
